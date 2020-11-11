@@ -67,6 +67,16 @@ class ServerWorker:
                 try:
                     self.clientInfo['videoStream'] = VideoStream(filename)
                     self.state = self.READY
+                    # TODO Get FPS, total time, number of frames of the video
+                    #
+                    #
+                    #
+                    self.clientInfo['videoStream'].calTotalTime()
+                    self.totalTime = self.clientInfo['videoStream'].totalTime
+                    self.fps = self.clientInfo['videoStream'].fps
+                    self.noFrames = self.clientInfo['videoStream'].numFrames
+                    #######################################################
+
                 except IOError:
                     self.replyRtsp(self.FILE_NOT_FOUND_404, seq[1])
 
@@ -106,21 +116,25 @@ class ServerWorker:
                 self.clientInfo['event'].set()
 
                 self.replyRtsp(self.OK_200, seq[1])
+        # TODO: ################################
+        #
+        #
         # Process FORWARD request
         elif requestType == self.FORWARD:
             if self.state == self.PLAYING:
                 print("processing FORWARD\n")
-                # self.state = self.PLAYING
-                # self.forward = 1
-                pass
-                # self.replyRtsp(self.OK_200, seq[1])
+                self.state = self.PLAYING
+                self.forward = 1
+                self.replyRtsp(self.OK_200, seq[1])
+
         # Process BACKWARD request
         elif requestType == self.BACKWARD:
             if self.state == self.PLAYING:
-                # print("processing BACKWARD\n")
-                # self.state = self.PLAYING
+                print("processing BACKWARD\n")
+                self.state = self.PLAYING
                 self.backward = 1
-                # self.replyRtsp(self.OK_200, seq[1])  # WHY DO I NOT NEED THIS ?
+                self.replyRtsp(self.OK_200, seq[1]) 
+        ########################################
 
         # Process TEARDOWN request
         elif requestType == self.TEARDOWN:
@@ -142,9 +156,13 @@ class ServerWorker:
             if self.clientInfo['event'].isSet():
                 break
 
-            data = self.clientInfo['videoStream'].nextFrame(self.forward, self.backward)
+            data = self.clientInfo['videoStream'].nextFrame(self.forward,self.backward)
+
+            
+            
             if data:
                 frameNumber = self.clientInfo['videoStream'].frameNbr()
+                print(frameNumber)
                 try:
                     address = self.clientInfo['rtspSocket'][1][0]
                     port = int(self.clientInfo['rtpPort'])
@@ -152,8 +170,13 @@ class ServerWorker:
                         self.makeRtp(data, frameNumber), (address, port))
                 except:
                     print("Connection Error")
+            # Reset forward and backward
+            #
+            #
+            #
             if ( self.backward == 1): self.backward = 0
             if ( self.forward == 1): self.forward = 0
+            #############################################
 
     def makeRtp(self, payload, frameNbr):
         """RTP-packetize the video data."""
@@ -176,15 +199,10 @@ class ServerWorker:
     def replyRtsp(self, code, seq):
         """Send RTSP reply to the client."""
         if code == self.OK_200:
-            # Getting total time of the video, fps, number of frames
-            totalTime = self.clientInfo['videoStream'].getTotalTime()
-            fps = self.clientInfo['videoStream'].getFps()
-            noFrames = self.clientInfo['videoStream'].getNumFrames()
             reply = 'RTSP/1.0 200 OK\nCSeq: ' + seq + \
-                '\nSession: ' + str(self.clientInfo['session']) + '\nTotal: ' + str(totalTime) + ' FPS: ' + str(fps) + ' Frames: ' + str(noFrames)
+            '\nSession: ' + str(self.clientInfo['session']) + '\nTotal: ' + str(self.totalTime) + ' FPS: ' + str(self.fps) + ' Frames: ' + str(self.noFrames)
             connSocket = self.clientInfo['rtspSocket'][0]
             connSocket.send(reply.encode())
-
         # Error messages
         elif code == self.FILE_NOT_FOUND_404:
             print("404 NOT FOUND")

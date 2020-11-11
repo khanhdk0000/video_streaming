@@ -68,12 +68,14 @@ class Client:
         self.teardown["command"] = self.exitClient
         self.teardown.grid(row=1, column=3, padx=2, pady=2)
 
+        # TODO: Create a new forward button in GUI
         #Create Fordward button
         self.forward = Button(self.master, width=20, padx=3, pady=3)
         self.forward["text"] = "Forward"
         self.forward["command"] = self.forwardMovie
         self.forward.grid(row=1, column=4, padx=2, pady=2)
 
+        # TODO: Create a new backward button in GUI
         #Create Backward button
         self.backward = Button(self.master, width=20, padx=3, pady=3)
         self.backward["text"] = "Backward"
@@ -111,11 +113,13 @@ class Client:
             self.playEvent.clear()
             self.sendRtspRequest(self.PLAY)
     
+    # TODO: create fordward handler
     def forwardMovie(self):
         """Forward button handler."""
         if self.state == self.PLAYING:
             self.sendRtspRequest(self.FORWARD)
     
+    # TODO create backward handler
     def backwardMovie(self):
         """Backward button handler."""
         if self.state == self.PLAYING:
@@ -132,8 +136,11 @@ class Client:
                     rtpPacket.decode(data)
 
                     currFrameNbr = rtpPacket.seqNum()
-                    print("Current Seq Num: " + str(currFrameNbr))
+                    print("Current FRAME Num: " + str(currFrameNbr))
+                    
 
+                    print("client",self.frameNbr)
+                    print("server",currFrameNbr)
                     if currFrameNbr > self.frameNbr:  # Discard the late packet 
                         self.frameNbr = currFrameNbr
                         self.updateMovie(self.writeFrame(
@@ -230,6 +237,8 @@ class Client:
             # Keep track of the sent request.
             # self.requestSent = ...
             self.requestSent = self.FORWARD
+            if self.frameNbr < self.noFrames:
+                self.frameNbr += 25
         # Backward request
         elif requestCode == self.BACKWARD:
             # Update RTSP sequence number.
@@ -242,6 +251,8 @@ class Client:
             # Keep track of the sent request.
             # self.requestSent = ...
             self.requestSent = self.BACKWARD
+            if self.frameNbr > 0:
+                self.frameNbr -= 25
         # Teardown request
         elif requestCode == self.TEARDOWN and not self.state == self.INIT:
             # Update RTSP sequence number.
@@ -281,10 +292,11 @@ class Client:
         lines = data.split('\n')
         seqNum = int(lines[1].split(' ')[1])
 
-        # Parse Total time, frames , FPS
+        # TODO: Parse Total time, FPS, frames
         print(lines[3].split(' ')[1])
         print(lines[3].split(' ')[3])
         print(lines[3].split(' ')[5])
+        self.noFrames = int(lines[3].split(' ')[5])
 
         # Process only if the server reply's sequence number is the same as the request's
         if seqNum == self.rtspSeq:
@@ -316,10 +328,10 @@ class Client:
                         self.playEvent.set()
                     elif self.requestSent == self.FORWARD:
                         # self.state = ...
-                        self.state = self.PLAYING
+                        pass
                     elif self.requestSent == self.BACKWARD:
                         # self.state = ...
-                        self.state = self.PLAYING
+                        pass
                     elif self.requestSent == self.TEARDOWN:
                         # self.state = ...
                         self.state = self.INIT
