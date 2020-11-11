@@ -22,10 +22,8 @@ class Client:
     SETUP = 0
     PLAY = 1
     PAUSE = 2
-    FORWARD = 3
-    BACKWARD = 4
-    TEARDOWN = 5    
-    
+    TEARDOWN = 3
+
     # Initiation..
     def __init__(self, master, serveraddr, serverport, rtpport, filename):
         self.master = master
@@ -68,18 +66,6 @@ class Client:
         self.teardown["command"] = self.exitClient
         self.teardown.grid(row=1, column=3, padx=2, pady=2)
 
-        #Create Fordward button
-        self.forward = Button(self.master, width=20, padx=3, pady=3)
-        self.forward["text"] = "Forward"
-        self.forward["command"] = self.forwardMovie
-        self.forward.grid(row=1, column=4, padx=2, pady=2)
-
-        #Create Backward button
-        self.backward = Button(self.master, width=20, padx=3, pady=3)
-        self.backward["text"] = "Backward"
-        self.backward["command"] = self.backwardMovie
-        self.backward.grid(row=1, column=5, padx=2, pady=2)
-
         # Create a label to display the movie
         self.label = Label(self.master, height=19)
         self.label.grid(row=0, column=0, columnspan=4,
@@ -110,17 +96,6 @@ class Client:
             self.playEvent = threading.Event()
             self.playEvent.clear()
             self.sendRtspRequest(self.PLAY)
-    
-    def forwardMovie(self):
-        """Forward button handler."""
-        if self.state == self.PLAYING:
-            self.sendRtspRequest(self.FORWARD)
-    
-    def backwardMovie(self):
-        """Backward button handler."""
-        if self.state == self.PLAYING:
-            self.sendRtspRequest(self.BACKWARD)
-    
 
     def listenRtp(self):
         """Listen for RTP packets."""
@@ -134,7 +109,7 @@ class Client:
                     currFrameNbr = rtpPacket.seqNum()
                     print("Current Seq Num: " + str(currFrameNbr))
 
-                    if currFrameNbr > self.frameNbr:  # Discard the late packet 
+                    if currFrameNbr > self.frameNbr:  # Discard the late packet
                         self.frameNbr = currFrameNbr
                         self.updateMovie(self.writeFrame(
                             rtpPacket.getPayload()))
@@ -186,80 +161,69 @@ class Client:
             # Update RTSP sequence number.
             # ...
             self.rtspSeq = self.rtspSeq + 1
+
             # Write the RTSP request to be sent.
             # request = ...
             request = "SETUP " + self.fileName + " RTSP/1.0\n" + "CSeq: " + \
                 str(self.rtspSeq) + "\n" + \
                 "Transport: RTP/UDP; client_port= " + str(self.rtpPort)
+
             # Keep track of the sent request.
             # self.requestSent = ...
             self.requestSent = self.SETUP
+
         # Play request
         elif requestCode == self.PLAY and self.state == self.READY:
             # Update RTSP sequence number.
             # ...
             self.rtspSeq = self.rtspSeq + 1
+
             # Write the RTSP request to be sent.
             # request = ...
             request = "PLAY " + self.fileName + " RTSP/1.0\n" + "CSeq: " + \
                 str(self.rtspSeq) + "\n" + "Session" + str(self.sessionId)
+
             # Keep track of the sent request.
             # self.requestSent = ...
             self.requestSent = self.PLAY
-        # Pause request
+
+            # Pause request
         elif requestCode == self.PAUSE and self.state == self.PLAYING:
             # Update RTSP sequence number.
             # ...
             self.rtspSeq = self.rtspSeq + 1
+
             # Write the RTSP request to be sent.
             # request = ...
             request = "PAUSE " + self.fileName + " RTSP/1.0\n" + "CSeq: " + \
                 str(self.rtspSeq) + "\n" + "Session" + str(self.sessionId)
+
             # Keep track of the sent request.
             # self.requestSent = ...
             self.requestSent = self.PAUSE
-        # Forward request
-        elif requestCode == self.FORWARD:
-            # Update RTSP sequence number.
-            # ...
-            self.rtspSeq = self.rtspSeq + 1
-            # Write the RTSP request to be sent.
-            # request = ...
-            request = "FORWARD " + self.fileName + " RTSP/1.0\n" + "CSeq: " + \
-                str(self.rtspSeq) + "\n" + "Session" + str(self.sessionId)
-            # Keep track of the sent request.
-            # self.requestSent = ...
-            self.requestSent = self.FORWARD
-        # Backward request
-        elif requestCode == self.BACKWARD:
-            # Update RTSP sequence number.
-            # ...
-            self.rtspSeq = self.rtspSeq + 1
-            # Write the RTSP request to be sent.
-            # request = ...
-            request = "BACKWARD " + self.fileName + " RTSP/1.0\n" + "CSeq: " + \
-                str(self.rtspSeq) + "\n" + "Session" + str(self.sessionId)
-            # Keep track of the sent request.
-            # self.requestSent = ...
-            self.requestSent = self.BACKWARD
-        # Teardown request
+
+            # Teardown request
         elif requestCode == self.TEARDOWN and not self.state == self.INIT:
             # Update RTSP sequence number.
             # ...
             self.rtspSeq = self.rtspSeq + 1
+
             # Write the RTSP request to be sent.
             # request = ...
             request = "TEARDOWN " + self.fileName + " RTSP/1.0\n" + "CSeq: " + \
                 str(self.rtspSeq) + "\n" + "Session" + str(self.sessionId)
+
             # Keep track of the sent request.
             # self.requestSent = ...
             self.requestSent = self.TEARDOWN
+
         else:
             return
 
         # Send the RTSP request using rtspSocket.
         # ...
         self.rtspSocket.send(str.encode(request))
+
         print('\nData sent:\n' + request)
 
     def recvRtspReply(self):
@@ -281,14 +245,8 @@ class Client:
         lines = data.split('\n')
         seqNum = int(lines[1].split(' ')[1])
 
-        # Parse Total time, frames , FPS
-        print(lines[3].split(' ')[1])
-        print(lines[3].split(' ')[3])
-        print(lines[3].split(' ')[5])
-
         # Process only if the server reply's sequence number is the same as the request's
         if seqNum == self.rtspSeq:
-           
             session = int(lines[2].split(' ')[1])
             # New RTSP session ID
             if self.sessionId == 0:
@@ -304,25 +262,23 @@ class Client:
                         # Update RTSP state.
                         # self.state = ...
                         self.state = self.READY
+
                         # Open RTP port.
                         self.openRtpPort()
                     elif self.requestSent == self.PLAY:
                         # self.state = ...
                         self.state = self.PLAYING
+
                     elif self.requestSent == self.PAUSE:
                         # self.state = ...
                         self.state = self.READY
+
                         # The play thread exits. A new thread is created on resume.
                         self.playEvent.set()
-                    elif self.requestSent == self.FORWARD:
-                        # self.state = ...
-                        self.state = self.PLAYING
-                    elif self.requestSent == self.BACKWARD:
-                        # self.state = ...
-                        self.state = self.PLAYING
                     elif self.requestSent == self.TEARDOWN:
                         # self.state = ...
                         self.state = self.INIT
+
                         # Flag the teardownAcked to close the socket.
                         self.teardownAcked = 1
 
@@ -333,24 +289,26 @@ class Client:
         # -------------
         # Create a new datagram socket to receive RTP packets from the server
         # self.rtpSocket = ...
+        self.rtpSocket = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
 
         # Set the timeout value of the socket to 0.5sec
         # ...
-        self.rtpSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.rtpSocket.settimeout(0.5)
+
         try:
             # Bind the socket to the address using the RTP port given by the client user
             # ...
             self.state = self.READY
-            self.rtpSocket.bind(('', self.rtpPort))
+            self.rtpSocket.bind(('',self.rtpPort))
+
         except:
-            messagebox.showwarning(
+            tkMessageBox.showwarning(
                 'Unable to Bind', 'Unable to bind PORT=%d' % self.rtpPort)
 
     def handler(self):
         """Handler on explicitly closing the GUI window."""
         self.pauseMovie()
-        if messagebox.askokcancel("Quit?", "Are you sure you want to quit?"):
+        if tkMessageBox.askokcancel("Quit?", "Are you sure you want to quit?"):
             self.exitClient()
         else:  # When the user presses cancel, resume playing.
             self.playMovie()
