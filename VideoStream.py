@@ -7,8 +7,8 @@ class VideoStream:
     # 											self.file
     # 											self.frameNum (number of current frame)
     # 											self.numFrames (total number of frames)
-    # 											self.fps
-    # 											self.totalTime
+    # 											self.fps (Frame per second)
+    # 											self.totalTime (Total time of the video)
 
     def __init__(self, filename):
         self.filename = filename
@@ -22,24 +22,37 @@ class VideoStream:
     def nextFrame(self, forward, backward):
         """Get next frame."""
         if self.filename == "movie.Mjpeg" or self.filename == "movie.mjpeg":
+            ######################################################################################
             # Backward frame processing
             moveFrames = 0
             if backward == 1:
-                for x in range(int(self.fps)):  # default move 1 second
+                for x in range(self.fps):  # default move 1 second
                     if self.frameNum != 0:
                         moveFrames += (5 + self.wholeVideo[self.frameNum-1])
                         self.frameNum -= 1
                 self.file.seek(-moveFrames, os.SEEK_CUR)
-                print(self.file.tell())
 
             # Forward frame processsing
             if forward == 1:
-                for x in range(int(self.fps)):  # default move 1 second
+                noMoveFrames = 0
+                for x in range(self.fps):  # default move 1 second
                     if self.frameNum < len(self.wholeVideo):
                         moveFrames += (5 + self.wholeVideo[self.frameNum])
                         self.frameNum += 1
+                        noMoveFrames += 1
                 self.file.seek(moveFrames, os.SEEK_CUR)
-                print(self.file.tell())
+
+                # Forward to the last frame if the number of frames need to move less than FPS
+                # TODO
+                #
+                #
+                if noMoveFrames < self.fps:
+                    lastFrame = self.wholeVideo[len(self.wholeVideo)-1]
+                    self.file.seek(-5 - lastFrame, os.SEEK_CUR)
+                    data = self.file.read(5)
+                    data = self.file.read(lastFrame)
+                    return data
+            #######################################################################################
             # Get the framelength from the first 5 bits
             data = self.file.read(5)
             # Forward frame processing
@@ -54,7 +67,6 @@ class VideoStream:
         """Append to the list"""
         # Get the framelength from the first 5 bits
         data = self.file.read(5)
-        # Forward frame processing
         if data:
             framelength = int(data)
             self.wholeVideo.append(framelength)
@@ -73,7 +85,7 @@ class VideoStream:
     def calFps(self):
         """Get frames per second."""
         cap = cv2.VideoCapture("./{0}".format(self.filename))
-        self.fps = cap.get(cv2.CAP_PROP_FPS)
+        self.fps = int(cap.get(cv2.CAP_PROP_FPS))
         
     def calTotalTime(self):
         """Get total time of the video."""

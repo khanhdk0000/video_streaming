@@ -67,7 +67,7 @@ class ServerWorker:
                 try:
                     self.clientInfo['videoStream'] = VideoStream(filename)
                     self.state = self.READY
-                    # TODO Get FPS, total time, number of frames of the video
+                    # TODO Get FPS, total time, number of frames of the video to send back to the client
                     #
                     #
                     #
@@ -155,14 +155,13 @@ class ServerWorker:
             # Stop sending if request is PAUSE or TEARDOWN
             if self.clientInfo['event'].isSet():
                 break
-
+            # Modify the nextFrame function need to recieve a signal whether to forward or backward
+            #
+            #
             data = self.clientInfo['videoStream'].nextFrame(self.forward,self.backward)
-
-            
-            
+            ######################################################################################
             if data:
                 frameNumber = self.clientInfo['videoStream'].frameNbr()
-                print(frameNumber)
                 try:
                     address = self.clientInfo['rtspSocket'][1][0]
                     port = int(self.clientInfo['rtpPort'])
@@ -170,7 +169,7 @@ class ServerWorker:
                         self.makeRtp(data, frameNumber), (address, port))
                 except:
                     print("Connection Error")
-            # Reset forward and backward
+            # Reset forward and backward#################
             #
             #
             #
@@ -199,8 +198,10 @@ class ServerWorker:
     def replyRtsp(self, code, seq):
         """Send RTSP reply to the client."""
         if code == self.OK_200:
-            reply = 'RTSP/1.0 200 OK\nCSeq: ' + seq + \
-            '\nSession: ' + str(self.clientInfo['session']) + '\nTotal: ' + str(self.totalTime) + ' FPS: ' + str(self.fps) + ' Frames: ' + str(self.noFrames)
+            # Send RTSP request ##################################################################
+            reply = 'RTSP/1.0 200 OK\nCSeq: ' + seq + '\nSession: ' + str(self.clientInfo['session']) + '\nTotal: ' + \
+            str(self.totalTime) + ' FPS: ' + str(self.fps) + ' Frames: ' + str(self.noFrames) # This header is not printed out
+            #######################################################################################
             connSocket = self.clientInfo['rtspSocket'][0]
             connSocket.send(reply.encode())
         # Error messages

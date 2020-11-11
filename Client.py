@@ -136,11 +136,9 @@ class Client:
                     rtpPacket.decode(data)
 
                     currFrameNbr = rtpPacket.seqNum()
-                    print("Current FRAME Num: " + str(currFrameNbr))
-                    
-
-                    print("client",self.frameNbr)
-                    print("server",currFrameNbr)
+                    # print("Current FRAME Num: " + str(currFrameNbr))
+                    # print("client",self.frameNbr)
+                    # print("server",currFrameNbr)
                     if currFrameNbr > self.frameNbr:  # Discard the late packet 
                         self.frameNbr = currFrameNbr
                         self.updateMovie(self.writeFrame(
@@ -209,7 +207,7 @@ class Client:
             # Write the RTSP request to be sent.
             # request = ...
             request = "PLAY " + self.fileName + " RTSP/1.0\n" + "CSeq: " + \
-                str(self.rtspSeq) + "\n" + "Session" + str(self.sessionId)
+                str(self.rtspSeq) + "\n" + "Session " + str(self.sessionId)
             # Keep track of the sent request.
             # self.requestSent = ...
             self.requestSent = self.PLAY
@@ -221,7 +219,7 @@ class Client:
             # Write the RTSP request to be sent.
             # request = ...
             request = "PAUSE " + self.fileName + " RTSP/1.0\n" + "CSeq: " + \
-                str(self.rtspSeq) + "\n" + "Session" + str(self.sessionId)
+                str(self.rtspSeq) + "\n" + "Session " + str(self.sessionId)
             # Keep track of the sent request.
             # self.requestSent = ...
             self.requestSent = self.PAUSE
@@ -233,12 +231,16 @@ class Client:
             # Write the RTSP request to be sent.
             # request = ...
             request = "FORWARD " + self.fileName + " RTSP/1.0\n" + "CSeq: " + \
-                str(self.rtspSeq) + "\n" + "Session" + str(self.sessionId)
+                str(self.rtspSeq) + "\n" + "Session " + str(self.sessionId)
             # Keep track of the sent request.
             # self.requestSent = ...
             self.requestSent = self.FORWARD
             if self.frameNbr < self.noFrames:
-                self.frameNbr += 25
+                if self.noFrames - self.frameNbr >= self.fps:
+                  self.frameNbr += 25
+                else:
+                    self.frameNbr = 499
+
         # Backward request
         elif requestCode == self.BACKWARD:
             # Update RTSP sequence number.
@@ -261,7 +263,7 @@ class Client:
             # Write the RTSP request to be sent.
             # request = ...
             request = "TEARDOWN " + self.fileName + " RTSP/1.0\n" + "CSeq: " + \
-                str(self.rtspSeq) + "\n" + "Session" + str(self.sessionId)
+                str(self.rtspSeq) + "\n" + "Session " + str(self.sessionId)
             # Keep track of the sent request.
             # self.requestSent = ...
             self.requestSent = self.TEARDOWN
@@ -293,9 +295,8 @@ class Client:
         seqNum = int(lines[1].split(' ')[1])
 
         # TODO: Parse Total time, FPS, frames
-        print(lines[3].split(' ')[1])
-        print(lines[3].split(' ')[3])
-        print(lines[3].split(' ')[5])
+        self.totalTime = float(lines[3].split(' ')[1])
+        self.fps = int(lines[3].split(' ')[3])
         self.noFrames = int(lines[3].split(' ')[5])
 
         # Process only if the server reply's sequence number is the same as the request's
