@@ -26,7 +26,7 @@ class VideoStream:
             if backward == 1:
                 for x in range(25):
                     if self.frameLengthList:
-                        last5secFrames += (self.frameLengthList.pop() + 5)
+                        last1secFrames += (self.frameLengthList.pop() + 5)
                 self.file.seek(-last1secFrames, os.SEEK_CUR)
                 # self.frameNum = self.frameNum - 25 ?
             # Get the framelength from the first 5 bits
