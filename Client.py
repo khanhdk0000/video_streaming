@@ -24,12 +24,23 @@ class Client:
     PAUSE = 2
     FORWARD = 3
     BACKWARD = 4
-    TEARDOWN = 5    
-    
+    DESCRIBE = 5
+    SWITCH = 6
+    TEARDOWN = 7
+
     # Initiation..
     def __init__(self, master, serveraddr, serverport, rtpport, filename):
         self.master = master
         self.master.protocol("WM_DELETE_WINDOW", self.handler)
+        # Count Down Timer
+        self.remainingTime = StringVar()
+        self.remainingTime.set('00')
+        # SWITCH GUI SUPPORT ##################
+        self.filenames = []
+        self.fileNameVar = StringVar(master)
+        self.fileNameVar.set('movie.Mjpeg')
+        self.ChangedFileName = filename
+        #######################################
         self.createWidgets()
         self.serverAddr = serveraddr
         self.serverPort = int(serverport)
@@ -41,6 +52,7 @@ class Client:
         self.teardownAcked = 0
         self.connectToServer()
         self.frameNbr = 0
+    
 
     def createWidgets(self):
         """Build GUI."""
@@ -69,23 +81,52 @@ class Client:
         self.teardown.grid(row=1, column=3, padx=2, pady=2)
 
         # TODO: Create a new forward button in GUI
-        #Create Fordward button
+        # Create Fordward button
         self.forward = Button(self.master, width=20, padx=3, pady=3)
         self.forward["text"] = "Forward"
         self.forward["command"] = self.forwardMovie
-        self.forward.grid(row=1, column=4, padx=2, pady=2)
+        self.forward.grid(row=2, column=0, padx=2, pady=2)
 
         # TODO: Create a new backward button in GUI
-        #Create Backward button
+        # Create Backward button
         self.backward = Button(self.master, width=20, padx=3, pady=3)
         self.backward["text"] = "Backward"
         self.backward["command"] = self.backwardMovie
-        self.backward.grid(row=1, column=5, padx=2, pady=2)
+        self.backward.grid(row=2, column=1, padx=2, pady=2)
+
+        # TODO: Create a new describe button in GUI
+        # Create describe button
+        self.backward = Button(self.master, width=20, padx=3, pady=3)
+        self.backward["text"] = "Describe"
+        # self.backward["command"]
+        self.backward.grid(row=2, column=3, padx=2, pady=2)
+
+        ####################################################################
+        # TODO: Create a Menu Option
+        # Create a Menu Option
+        self.dropbar = OptionMenu(
+            self.master, self.fileNameVar, ['movie.Mjpeg'])
+        self.dropbar.grid(row=3, column=1, padx=2, pady=2)
+        self.dropbar.config(width=20, padx=3, pady=3)
+        ####################################################################
+
+        # TODO: Create a new switch button in GUI
+        # Create switch button
+        self.backward = Button(self.master, width=20, padx=3, pady=3)
+        self.backward["text"] = "Switch"
+        self.backward["command"] = self.switchMovie
+        self.backward.grid(row=3, column=0, padx=2, pady=2)
 
         # Create a label to display the movie
         self.label = Label(self.master, height=19)
         self.label.grid(row=0, column=0, columnspan=4,
                         sticky=W+E+N+S, padx=5, pady=5)
+
+        # TODO Create a place to display remaining time
+        self.timer = Entry(self.master, width=20,
+                            textvariable=self.remainingTime)
+        self.timer.grid(row=3, column=2, padx=2, pady=2)
+            
 
     def setupMovie(self):
         """Setup button handler."""
@@ -112,19 +153,39 @@ class Client:
             self.playEvent = threading.Event()
             self.playEvent.clear()
             self.sendRtspRequest(self.PLAY)
-    
+
     # TODO: create fordward handler
     def forwardMovie(self):
         """Forward button handler."""
         if self.state == self.PLAYING:
             self.sendRtspRequest(self.FORWARD)
-    
+
     # TODO create backward handler
     def backwardMovie(self):
         """Backward button handler."""
         if self.state == self.PLAYING:
             self.sendRtspRequest(self.BACKWARD)
+
+    def switchMovie(self):
+        """Backward button handler."""
+        self.fileName = self.ChangedFileName
+        self.sendRtspRequest(self.SWITCH)
+
+    def describeMovie(self):
+        """Describe button handler."""
+        pass
     
+    ##########################################################
+    #
+    #
+    # Update the GUI 
+    def updateCountDownTimer(self):
+        remainingTime = (self.noFrames - self.frameNbr) / self.fps
+        self.remainingTime.set(remainingTime)
+        print("Time left",remainingTime)
+        self.master.update()
+
+    #########################################################
 
     def listenRtp(self):
         """Listen for RTP packets."""
@@ -139,10 +200,14 @@ class Client:
                     # print("Current FRAME Num: " + str(currFrameNbr))
                     # print("client",self.frameNbr)
                     # print("server",currFrameNbr)
-                    if currFrameNbr > self.frameNbr:  # Discard the late packet 
+                    if currFrameNbr > self.frameNbr:  # Discard the late packet
                         self.frameNbr = currFrameNbr
                         self.updateMovie(self.writeFrame(
                             rtpPacket.getPayload()))
+                        
+                        # TODO: Update timer
+                        if int(self.frameNbr) % int(self.fps) == 0:
+                            self.updateCountDownTimer()
             except:
                 # Stop listening upon requesting PAUSE or TEARDOWN
                 if self.playEvent.isSet():
@@ -237,9 +302,9 @@ class Client:
             self.requestSent = self.FORWARD
             if self.frameNbr < self.noFrames:
                 if self.noFrames - self.frameNbr >= self.fps:
-                  self.frameNbr += 25
+                    self.frameNbr += 25
                 else:
-                    self.frameNbr = 499
+                    self.frameNbr = self.noFrames - 1
 
         # Backward request
         elif requestCode == self.BACKWARD:
@@ -249,12 +314,36 @@ class Client:
             # Write the RTSP request to be sent.
             # request = ...
             request = "BACKWARD " + self.fileName + " RTSP/1.0\n" + "CSeq: " + \
-                str(self.rtspSeq) + "\n" + "Session" + str(self.sessionId)
+                str(self.rtspSeq) + "\n" + "Session " + str(self.sessionId)
             # Keep track of the sent request.
             # self.requestSent = ...
             self.requestSent = self.BACKWARD
             if self.frameNbr > 0:
                 self.frameNbr -= 25
+        elif requestCode == self.DESCRIBE:
+            # Update RTSP sequence number.
+            # ...
+            self.rtspSeq = self.rtspSeq + 1
+            # Write the RTSP request to be sent.
+            # request = ...
+            request = "DESCRIBE " + self.fileName + " RTSP/1.0\n" + "CSeq: " + \
+                str(self.rtspSeq) + "\n" + "Session " + str(self.sessionId)
+            # Keep track of the sent request.
+            # self.requestSent = ...
+            self.requestSent = self.DESCRIBE
+        elif requestCode == self.SWITCH:
+            # Update RTSP sequence number.
+            # ...
+            self.rtspSeq = self.rtspSeq + 1
+            # Write the RTSP request to be sent.
+            # request = ...
+            request = "SWITCH " + self.fileName + " RTSP/1.0\n" + "CSeq: " + \
+                str(self.rtspSeq) + "\n" + "Session " + str(self.sessionId)
+            # Keep track of the sent request.
+            # self.requestSent = ...
+            self.requestSent = self.SWITCH
+
+            self.frameNbr = 0
         # Teardown request
         elif requestCode == self.TEARDOWN and not self.state == self.INIT:
             # Update RTSP sequence number.
@@ -289,6 +378,14 @@ class Client:
                 self.rtspSocket.close()
                 break
 
+    # Call back function for the names of media ####
+    #
+    #
+    def fileNameCallBack(self, *args):
+        print("CALLBACK", self.fileNameVar.get())
+        self.ChangedFileName = str(self.fileNameVar.get())
+    ################################################
+
     def parseRtspReply(self, data):
         """Parse the RTSP reply from the server."""
         lines = data.split('\n')
@@ -299,9 +396,25 @@ class Client:
         self.fps = int(lines[3].split(' ')[3])
         self.noFrames = int(lines[3].split(' ')[5])
 
+        # TODO: Parse file names
+        if len(lines[4].split(' '))-1 > len(self.filenames):
+            for i in lines[4].split(' '):
+                if i == 'Media:':
+                    continue
+                self.filenames.append(i)
+            self.updateOptionMenu()
+        # Sort out duplicates
+        self.filenames = sorted(set(self.filenames))
+
+        # Display total time of the video
+        # TODO: Create a slot to display time
+        self.backward = Button(self.master, width=20, padx=3, pady=3)
+        self.backward["text"] = "Total time: " + str(self.totalTime) + "s"
+        self.backward.grid(row=2, column=2, padx=2, pady=2)
+
         # Process only if the server reply's sequence number is the same as the request's
         if seqNum == self.rtspSeq:
-           
+
             session = int(lines[2].split(' ')[1])
             # New RTSP session ID
             if self.sessionId == 0:
@@ -319,6 +432,11 @@ class Client:
                         self.state = self.READY
                         # Open RTP port.
                         self.openRtpPort()
+
+                        # Get total time of video to remaining time
+                        self.remainingTime.set(str(self.totalTime))
+                        self.master.update()
+
                     elif self.requestSent == self.PLAY:
                         # self.state = ...
                         self.state = self.PLAYING
@@ -333,6 +451,12 @@ class Client:
                     elif self.requestSent == self.BACKWARD:
                         # self.state = ...
                         pass
+                    elif self.requestSent == self.DESCRIBE:
+                        # self.state = ...
+                        pass
+                    elif self.requestSent == self.SWITCH:
+                        # self.state = ...
+                        self.state = self.READY
                     elif self.requestSent == self.TEARDOWN:
                         # self.state = ...
                         self.state = self.INIT
@@ -367,3 +491,15 @@ class Client:
             self.exitClient()
         else:  # When the user presses cancel, resume playing.
             self.playMovie()
+
+    ####################################################################
+    # Create a drop bar
+    def updateOptionMenu(self):
+        OPTIONS = self.filenames
+        if len(self.filenames) == 0:
+            OPTIONS = ['']
+        self.dropbar = OptionMenu(self.master, self.fileNameVar, *OPTIONS)
+        self.dropbar.grid(row=3, column=1, padx=2, pady=2)
+        self.dropbar.config(width=20, padx=3, pady=3)
+        self.fileNameVar.trace("w", self.fileNameCallBack)
+    ####################################################################
