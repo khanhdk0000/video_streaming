@@ -52,7 +52,6 @@ class Client:
         self.teardownAcked = 0
         self.connectToServer()
         self.frameNbr = 0
-    
 
     def createWidgets(self):
         """Build GUI."""
@@ -123,10 +122,9 @@ class Client:
                         sticky=W+E+N+S, padx=5, pady=5)
 
         # TODO Create a place to display remaining time
-        self.timer = Entry(self.master, width=20,
-                            textvariable=self.remainingTime)
+        self.timer = Entry(self.master, width=20, justify='center',
+                           textvariable=self.remainingTime)
         self.timer.grid(row=3, column=2, padx=2, pady=2)
-            
 
     def setupMovie(self):
         """Setup button handler."""
@@ -174,11 +172,11 @@ class Client:
     def describeMovie(self):
         """Describe button handler."""
         pass
-    
+
     ##########################################################
     #
     #
-    # Update the GUI 
+    # Update the GUI
     def updateCountDownTimer(self):
         remainingTime = (self.noFrames - self.frameNbr) / self.fps
         self.remainingTime.set(remainingTime)
@@ -200,7 +198,7 @@ class Client:
                         self.frameNbr = currFrameNbr
                         self.updateMovie(self.writeFrame(
                             rtpPacket.getPayload()))
-                        
+
                         # TODO: Update timer
                         if int(self.frameNbr) % int(self.fps) == 0 or self.frameNbr == self.noFrames:
                             self.updateCountDownTimer()
