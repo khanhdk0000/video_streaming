@@ -61,8 +61,6 @@ class VideoStream:
             data = self.file.read(framelength)
             self.frameNum += 1
         return data
-        
-       
 
     def getWholeVideo(self):
         """Append to the list"""
@@ -82,13 +80,12 @@ class VideoStream:
         self.numFrames = len(self.wholeVideo)
         self.file.close()
         self.file = open(self.filename, 'rb')
-        
 
     def calFps(self):
         """Get frames per second."""
         cap = cv2.VideoCapture("./{0}".format(self.filename))
         self.fps = int(cap.get(cv2.CAP_PROP_FPS))
-        
+
     def calTotalTime(self):
         """Get total time of the video."""
         self.calNumFrames()

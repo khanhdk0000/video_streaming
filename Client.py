@@ -182,7 +182,6 @@ class Client:
     def updateCountDownTimer(self):
         remainingTime = (self.noFrames - self.frameNbr) / self.fps
         self.remainingTime.set(remainingTime)
-        print("Time left",remainingTime)
         self.master.update()
 
     #########################################################
@@ -197,9 +196,6 @@ class Client:
                     rtpPacket.decode(data)
 
                     currFrameNbr = rtpPacket.seqNum()
-                    # print("Current FRAME Num: " + str(currFrameNbr))
-                    # print("client",self.frameNbr)
-                    # print("server",currFrameNbr)
                     if currFrameNbr > self.frameNbr:  # Discard the late packet
                         self.frameNbr = currFrameNbr
                         self.updateMovie(self.writeFrame(
@@ -382,7 +378,6 @@ class Client:
     #
     #
     def fileNameCallBack(self, *args):
-        print("CALLBACK", self.fileNameVar.get())
         self.ChangedFileName = str(self.fileNameVar.get())
     ################################################
 
@@ -457,6 +452,11 @@ class Client:
                     elif self.requestSent == self.SWITCH:
                         # self.state = ...
                         self.state = self.READY
+
+                        # Get total time of video to remaining time after SWITCHING video
+                        self.remainingTime.set(str(self.totalTime))
+                        self.master.update()
+
                     elif self.requestSent == self.TEARDOWN:
                         # self.state = ...
                         self.state = self.INIT
