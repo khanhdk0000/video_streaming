@@ -19,7 +19,7 @@ def main(argv):
         frameLength = 0
         shouldClose = False
 
-
+        print("Encoding...")
         while not shouldClose:
             while True:
                 bytes_data = b''
@@ -59,6 +59,7 @@ def main(argv):
         file = open(fileName, 'wb')
         file.write(reduce(lambda x, y: x + y, data))
         file.close()
+        print("Finish encoding!")
 
     except:
         print("Find not found!")
