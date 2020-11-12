@@ -202,7 +202,7 @@ class Client:
                             rtpPacket.getPayload()))
                         
                         # TODO: Update timer
-                        if int(self.frameNbr) % int(self.fps) == 0:
+                        if int(self.frameNbr) % int(self.fps) == 0 or self.frameNbr == self.noFrames:
                             self.updateCountDownTimer()
             except:
                 # Stop listening upon requesting PAUSE or TEARDOWN
@@ -298,7 +298,7 @@ class Client:
             self.requestSent = self.FORWARD
             if self.frameNbr < self.noFrames:
                 if self.noFrames - self.frameNbr >= self.fps:
-                    self.frameNbr += 25
+                    self.frameNbr += self.fps
                 else:
                     self.frameNbr = self.noFrames - 1
 
@@ -315,7 +315,7 @@ class Client:
             # self.requestSent = ...
             self.requestSent = self.BACKWARD
             if self.frameNbr > 0:
-                self.frameNbr -= 25
+                self.frameNbr -= self.fps
         elif requestCode == self.DESCRIBE:
             # Update RTSP sequence number.
             # ...
