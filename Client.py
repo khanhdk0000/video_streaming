@@ -54,6 +54,8 @@ class Client:
         self.frameNbr = 0
         self.packet_received = 0
         self.packet_loss = 0
+        self.time_pass = 0
+        self.data_size = 0
 
     def createWidgets(self):
         """Build GUI."""
@@ -195,6 +197,7 @@ class Client:
                     rtpPacket = RtpPacket()
                     rtpPacket.decode(data)
                     self.packet_received += 1
+                    self.data_size += len(data)
                     currFrameNbr = rtpPacket.seqNum()
                     if currFrameNbr > self.frameNbr:  # Discard the late packet
                         self.frameNbr = currFrameNbr
@@ -203,8 +206,13 @@ class Client:
                         # TODO: Update timer
                         if int(self.frameNbr) % int(self.fps) == 0 or self.frameNbr == self.noFrames:
                             self.updateCountDownTimer()
+                            self.time_pass += 1
                     else:
                         self.packet_loss += 1
+                    
+                    if self.time_pass > 0:
+                        print("Time pass: " + str(self.time_pass) + "s")
+                        print("Video data rate: " + str(int(self.data_size/self.time_pass)))
                     
                     print("Packet loss: " + str(self.packet_loss))
                     print("Total packet received: " + str(self.packet_received))
