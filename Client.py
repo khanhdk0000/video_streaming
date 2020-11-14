@@ -573,6 +573,10 @@ class Client:
                         self.frameNbr = 0
                         self.state = self.READY
 
+                        # Reset the remaining time back to the total time after pressing STOP.
+                        self.remainingTime.set(str(self.totalTime))
+                        self.master.update()
+
     def openRtpPort(self):
         """Open RTP socket binded to a specified port."""
         # -------------
@@ -596,11 +600,13 @@ class Client:
 
     def handler(self):
         """Handler on explicitly closing the GUI window."""
+        previousState = self.state
         self.pauseMovie()
         if messagebox.askokcancel("Quit?", "Are you sure you want to quit?"):
             self.exitClient()
-        else:  # When the user presses cancel, resume playing.
-            self.playMovie()
+        else:  # When the user presses cancel, resume playing only when the video was playing before.
+            if previousState == self.PLAYING:
+                self.playMovie()
 
     ####################################################################
     # Create a drop bar
