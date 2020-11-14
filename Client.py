@@ -212,11 +212,11 @@ class Client:
                     
                     if self.time_pass > 0:
                         print("Time pass: " + str(self.time_pass) + "s")
-                        print("Video data rate: " + str(int(self.data_size/self.time_pass)))
-                    
+                        print("Video data rate: " + str(int(self.data_size/self.time_pass)) + " bytes/s")
                     print("Packet loss: " + str(self.packet_loss))
                     print("Total packet received: " + str(self.packet_received))
                     print("Packet loss rate: " + str(int(self.packet_loss*100/self.packet_received)) + "%" )
+                    print("\n")
             except:
                 # Stop listening upon requesting PAUSE or TEARDOWN
                 if self.playEvent.isSet():
