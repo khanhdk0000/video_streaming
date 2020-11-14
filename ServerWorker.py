@@ -18,6 +18,7 @@ class ServerWorker:
     BACKWARD = 'BACKWARD'
     DESCRIBE = 'DESCRIBE'
     SWITCH = 'SWITCH'
+    STOP = 'STOP'
 
     INIT = 0
     READY = 1
@@ -32,6 +33,8 @@ class ServerWorker:
 
     forward = 0
     backward = 0
+
+    filename = ''
 
     def __init__(self, clientInfo):
         self.clientInfo = clientInfo
@@ -70,7 +73,7 @@ class ServerWorker:
         requestType = line1[0]
 
         # Get the media file name
-        filename = line1[1]
+        self.filename = line1[1]
 
         # Get the RTSP sequence number
         seq = request[1].split(' ')
@@ -81,7 +84,7 @@ class ServerWorker:
                 print("processing SETUP\n")
 
                 try:
-                    self.clientInfo['videoStream'] = VideoStream(filename)
+                    self.clientInfo['videoStream'] = VideoStream(self.filename)
                     self.state = self.READY
                     # TODO Get FPS, total time, number of frames of the video to send back to the client
                     #
@@ -166,7 +169,7 @@ class ServerWorker:
             print("processing SWITCH\n")
             # If the state is READY
             if self.state == self.READY:
-                self.clientInfo['videoStream'] = VideoStream(filename)
+                self.clientInfo['videoStream'] = VideoStream(self.filename)
                 # TODO 
                 # Get FPS, total time, number of frames of the video to send back to the client
                 #
@@ -192,6 +195,15 @@ class ServerWorker:
 
             # Close the RTP socket
             self.clientInfo['rtpSocket'].close()
+
+        # process stop request
+        elif requestType == self.STOP:
+            print("processing STOP\n")
+            if self.state == self.PLAYING or self.state == self.READY:
+                self.clientInfo['event'].set()
+                self.clientInfo['videoStream'].resetFrame()
+                self.state = self.READY
+                self.replyRtsp(self.OK_200, seq[1])
 
     def sendRtp(self):
         """Send RTP packets over UDP."""
@@ -249,7 +261,7 @@ class ServerWorker:
             reply = 'RTSP/1.0 200 OK\nCSeq: ' + seq + '\nSession: ' + str(self.clientInfo['session']) + '\nTotal: ' + \
                     str(self.totalTime) + ' FPS: ' + str(self.fps) + ' Frames: ' + str(self.noFrames) + '\n' + \
                     'Media:' + self.getAllMediaFiles() + \
-                    f"\nv: 0 s: {self.clientInfo['session']} a: RTSP a: Motion-JPEG a: utf-8"
+                    f"\nv: 0 s: {self.clientInfo['session']} a: RTSP a: Motion-JPEG a: utf-8 i: {self.filename}"
             #######################################################################################
             connSocket = self.clientInfo['rtspSocket'][0]
             connSocket.send(reply.encode())

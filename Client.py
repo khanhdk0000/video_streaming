@@ -6,6 +6,7 @@ import threading
 import sys
 import traceback
 import os
+import time
 
 from RtpPacket import RtpPacket
 
@@ -27,6 +28,7 @@ class Client:
     DESCRIBE = 5
     SWITCH = 6
     TEARDOWN = 7
+    STOP = 8
 
     # Initiation..
     def __init__(self, master, serveraddr, serverport, rtpport, filename):
@@ -52,53 +54,124 @@ class Client:
         self.teardownAcked = 0
         self.connectToServer()
         self.frameNbr = 0
+        self.setupMovie()
 
     def createWidgets(self):
         """Build GUI."""
-        # Create Setup button
-        self.setup = Button(self.master, width=20, padx=3, pady=3)
-        self.setup["text"] = "Setup"
-        self.setup["command"] = self.setupMovie
-        self.setup.grid(row=1, column=0, padx=2, pady=2)
+        # # Create Setup button
+        # self.setup = Button(self.master, width=20, padx=3, pady=3)
+        # self.setup["text"] = "Setup"
+        # self.setup["command"] = self.setupMovie
+        # self.setup.grid(row=1, column=0, padx=2, pady=2)
+        #
+        # # Create Play button
+        # self.start = Button(self.master, width=20, padx=3, pady=3)
+        # self.start["text"] = "Play"
+        # self.start["command"] = self.playMovie
+        # self.start.grid(row=1, column=1, padx=2, pady=2)
 
         # Create Play button
-        self.start = Button(self.master, width=20, padx=3, pady=3)
-        self.start["text"] = "Play"
-        self.start["command"] = self.playMovie
-        self.start.grid(row=1, column=1, padx=2, pady=2)
+        # but = Button(
+        #     root,
+        #     bd=0,
+        #     relief="groove",
+        #     compound=tk.CENTER,
+        #     bg="white",
+        #     fg="yellow",
+        #     activeforeground="pink",
+        #     activebackground="white",
+        #     font="arial 30",
+        #     text="Click me",
+        #     pady=10,
+        #     # width=300
+        # )
+
+        def on_enter_play(e):
+            self.start['background'] = '#ffcbf2'
+        def on_leave_play(e):
+            self.start['background'] = 'SystemButtonFace'
+        def on_enter_pause(e):
+            self.pause['background'] = '#ffcbf2'
+        def on_leave_pause(e):
+            self.pause['background'] = 'SystemButtonFace'
+        def on_enter_stop(e):
+            self.teardown['background'] = '#ffcbf2'
+        def on_leave_stop(e):
+            self.teardown['background'] = 'SystemButtonFace'
+        def on_enter_forward(e):
+            self.forward['background'] = '#ffcbf2'
+        def on_leave_forward(e):
+            self.forward['background'] = 'SystemButtonFace'
+        def on_enter_backward(e):
+            self.backward['background'] = '#ffcbf2'
+        def on_leave_backward(e):
+            self.backward['background'] = 'SystemButtonFace'
+        def on_enter_describe(e):
+            self.describe['background'] = '#ffcbf2'
+        def on_leave_describe(e):
+            self.describe['background'] = 'SystemButtonFace'
+        def on_enter_switch(e):
+            self.switch['background'] = '#ffcbf2'
+        def on_leave_switch(e):
+            self.switch['background'] = 'SystemButtonFace'
+
+
+        self.start = Button(self.master, width=20, padx=3, pady=3,bg='#ffffff', activebackground='#deaaff')
+        self.start["text"] = "Play",
+        self.start["command"] = self.setplayMovie
+        self.start.grid(row=1, column=0, padx=2, pady=2)
+        self.start.bind("<Enter>", on_enter_play)
+        self.start.bind("<Leave>", on_leave_play)
 
         # Create Pause button
-        self.pause = Button(self.master, width=20, padx=3, pady=3)
+        self.pause = Button(self.master, width=20, padx=3, pady=3,bg='#ffffff', activebackground='#deaaff')
         self.pause["text"] = "Pause"
         self.pause["command"] = self.pauseMovie
-        self.pause.grid(row=1, column=2, padx=2, pady=2)
+        self.pause.grid(row=1, column=1, padx=2, pady=2)
+        self.pause.bind("<Enter>", on_enter_pause)
+        self.pause.bind("<Leave>", on_leave_pause)
 
-        # Create Teardown button
-        self.teardown = Button(self.master, width=20, padx=3, pady=3)
-        self.teardown["text"] = "Teardown"
-        self.teardown["command"] = self.exitClient
-        self.teardown.grid(row=1, column=3, padx=2, pady=2)
+        # # Create Teardown button
+        # self.teardown = Button(self.master, width=20, padx=3, pady=3)
+        # self.teardown["text"] = "Teardown"
+        # self.teardown["command"] = self.exitClient
+        # self.teardown.grid(row=1, column=3, padx=2, pady=2)
+
+        # TODO: Create a stop button
+        # Create stop button
+        self.teardown = Button(self.master, width=20, padx=3, pady=3,bg='#ffffff', activebackground='#deaaff')
+        self.teardown["text"] = "Stop"
+        self.teardown["command"] = self.stopMovie
+        self.teardown.grid(row=1, column=2, padx=2, pady=2)
+        self.teardown.bind("<Enter>", on_enter_stop)
+        self.teardown.bind("<Leave>", on_leave_stop)
 
         # TODO: Create a new forward button in GUI
         # Create Fordward button
-        self.forward = Button(self.master, width=20, padx=3, pady=3)
+        self.forward = Button(self.master, width=20, padx=3, pady=3,bg='#ffffff', activebackground='#deaaff')
         self.forward["text"] = "Forward"
         self.forward["command"] = self.forwardMovie
-        self.forward.grid(row=2, column=0, padx=2, pady=2)
+        self.forward.grid(row=1, column=4, padx=2, pady=2)
+        self.forward.bind("<Enter>", on_enter_forward)
+        self.forward.bind("<Leave>", on_leave_forward)
 
         # TODO: Create a new backward button in GUI
         # Create Backward button
-        self.backward = Button(self.master, width=20, padx=3, pady=3)
+        self.backward = Button(self.master, width=20, padx=3, pady=3,bg='#ffffff', activebackground='#deaaff')
         self.backward["text"] = "Backward"
         self.backward["command"] = self.backwardMovie
-        self.backward.grid(row=2, column=1, padx=2, pady=2)
+        self.backward.grid(row=2, column=0, padx=2, pady=2)
+        self.backward.bind("<Enter>", on_enter_backward)
+        self.backward.bind("<Leave>", on_leave_backward)
 
         # TODO: Create a new describe button in GUI
         # Create describe button
-        self.backward = Button(self.master, width=20, padx=3, pady=3)
-        self.backward["text"] = "Describe"
-        self.backward["command"] = self.describeMovie
-        self.backward.grid(row=2, column=3, padx=2, pady=2)
+        self.describe = Button(self.master, width=20, padx=3, pady=3,bg='#ffffff', activebackground='#deaaff')
+        self.describe["text"] = "Describe"
+        self.describe["command"] = self.describeMovie
+        self.describe.grid(row=2, column=1, padx=2, pady=2)
+        self.describe.bind("<Enter>", on_enter_describe)
+        self.describe.bind("<Leave>", on_leave_describe)
 
         ####################################################################
         # TODO: Create a Menu Option
@@ -111,10 +184,12 @@ class Client:
 
         # TODO: Create a new switch button in GUI
         # Create switch button
-        self.backward = Button(self.master, width=20, padx=3, pady=3)
-        self.backward["text"] = "Switch"
-        self.backward["command"] = self.switchMovie
-        self.backward.grid(row=3, column=0, padx=2, pady=2)
+        self.switch = Button(self.master, width=20, padx=3, pady=3,bg='#ffffff', activebackground='#deaaff')
+        self.switch["text"] = "Switch"
+        self.switch["command"] = self.switchMovie
+        self.switch.grid(row=3, column=0, padx=2, pady=2)
+        self.switch.bind("<Enter>", on_enter_switch)
+        self.switch.bind("<Leave>", on_leave_switch)
 
         # Create a label to display the movie
         self.label = Label(self.master, height=19)
@@ -169,10 +244,21 @@ class Client:
         self.fileName = self.ChangedFileName
         self.sendRtspRequest(self.SWITCH)
 
+    # TODO: describe movie
     def describeMovie(self):
         """Describe button handler."""
         if self.state != self.INIT:
             self.sendRtspRequest(self.DESCRIBE)
+
+    # TODO: stop movie
+    def stopMovie(self):
+        """Stop button handler"""
+        if self.state == self.PLAYING or self.state == self.READY:
+            self.sendRtspRequest(self.STOP)
+
+    def setplayMovie(self):
+        """Set up and play movie"""
+        self.playMovie()
 
     ##########################################################
     #
@@ -351,10 +437,19 @@ class Client:
             # Keep track of the sent request.
             # self.requestSent = ...
             self.requestSent = self.TEARDOWN
-        elif requestCode == self.DESCRIBE:
+        # Describe request
+        elif requestCode == self.DESCRIBE and not self.state == self.INIT:
             self.rtspSeq = self.rtspSeq + 1
             request = "DESCRIBE " + self.fileName + " RTSP/1.0\n" + "CSeq: " + \
                       str(self.rtspSeq) + "\n" + "Session " + str(self.sessionId)
+            self.requestSent = self.DESCRIBE
+
+        # Stop request
+        elif requestCode == self.STOP and (self.state == self.PLAYING or self.READY):
+            self.rtspSeq = self.rtspSeq + 1
+            request = "STOP " + self.fileName + " RTSP/1.0\n" + "CSeq: " + \
+                      str(self.rtspSeq) + "\n" + "Session " + str(self.sessionId)
+            self.requestSent = self.STOP
         else:
             return
 
@@ -409,14 +504,14 @@ class Client:
         description = lines[5].split(' ')
         describe = f"Protocol version number: {description[1]}\n" \
                    f"Session name: {description[3]}\nProtocol: {description[5]}\n" \
-                   f"File type: {description[7]}\nEncoding: {description[9]}"
+                   f"File type: {description[7]}\nEncoding: {description[9]}\nFile name: {description[11]}"
 
         # Display total time of the video
         # TODO: Create a slot to display time
         if self.requestSent == self.SETUP or self.requestSent == self.SWITCH:
-            self.backward = Button(self.master, width=20, padx=3, pady=3)
-            self.backward["text"] = "Total time: " + str(self.totalTime) + "s"
-            self.backward.grid(row=2, column=2, padx=2, pady=2)
+            self.total = Button(self.master, width=20, padx=3, pady=3)
+            self.total["text"] = "Total time: " + str(self.totalTime) + "s"
+            self.total.grid(row=2, column=2, padx=2, pady=2)
 
         # Process only if the server reply's sequence number is the same as the request's
         if seqNum == self.rtspSeq:
@@ -473,6 +568,10 @@ class Client:
                         self.state = self.INIT
                         # Flag the teardownAcked to close the socket.
                         self.teardownAcked = 1
+
+                    elif self.requestSent == self.STOP:
+                        self.frameNbr = 0
+                        self.state = self.READY
 
     def openRtpPort(self):
         """Open RTP socket binded to a specified port."""
