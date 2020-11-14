@@ -416,9 +416,10 @@ class Client:
 
         # Display total time of the video
         # TODO: Create a slot to display time
-        self.backward = Button(self.master, width=20, padx=3, pady=3)
-        self.backward["text"] = "Total time: " + str(self.totalTime) + "s"
-        self.backward.grid(row=2, column=2, padx=2, pady=2)
+        if (self.requestSent == self.SETUP or self.requestSent == self.SWITCH):
+            self.backward = Button(self.master, width=20, padx=3, pady=3)
+            self.backward["text"] = "Total time: " + str(self.totalTime) + "s"
+            self.backward.grid(row=2, column=2, padx=2, pady=2)
 
         # Process only if the server reply's sequence number is the same as the request's
         if seqNum == self.rtspSeq:
