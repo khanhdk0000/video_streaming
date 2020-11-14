@@ -97,7 +97,7 @@ class Client:
         # Create describe button
         self.backward = Button(self.master, width=20, padx=3, pady=3)
         self.backward["text"] = "Describe"
-        # self.backward["command"]
+        self.backward["command"] = self.describeMovie
         self.backward.grid(row=2, column=3, padx=2, pady=2)
 
         ####################################################################
@@ -119,7 +119,7 @@ class Client:
         # Create a label to display the movie
         self.label = Label(self.master, height=19)
         self.label.grid(row=0, column=0, columnspan=4,
-                        sticky=W+E+N+S, padx=5, pady=5)
+                        sticky=W + E + N + S, padx=5, pady=5)
 
         # TODO Create a place to display remaining time
         self.timer = Entry(self.master, width=20, justify='center',
@@ -171,7 +171,8 @@ class Client:
 
     def describeMovie(self):
         """Describe button handler."""
-        pass
+        if self.state != self.INIT:
+            self.sendRtspRequest(self.DESCRIBE)
 
     ##########################################################
     #
@@ -253,8 +254,8 @@ class Client:
             # Write the RTSP request to be sent.
             # request = ...
             request = "SETUP " + self.fileName + " RTSP/1.0\n" + "CSeq: " + \
-                str(self.rtspSeq) + "\n" + \
-                "Transport: RTP/UDP; client_port= " + str(self.rtpPort)
+                      str(self.rtspSeq) + "\n" + \
+                      "Transport: RTP/UDP; client_port= " + str(self.rtpPort)
             # Keep track of the sent request.
             # self.requestSent = ...
             self.requestSent = self.SETUP
@@ -266,7 +267,7 @@ class Client:
             # Write the RTSP request to be sent.
             # request = ...
             request = "PLAY " + self.fileName + " RTSP/1.0\n" + "CSeq: " + \
-                str(self.rtspSeq) + "\n" + "Session " + str(self.sessionId)
+                      str(self.rtspSeq) + "\n" + "Session " + str(self.sessionId)
             # Keep track of the sent request.
             # self.requestSent = ...
             self.requestSent = self.PLAY
@@ -278,7 +279,7 @@ class Client:
             # Write the RTSP request to be sent.
             # request = ...
             request = "PAUSE " + self.fileName + " RTSP/1.0\n" + "CSeq: " + \
-                str(self.rtspSeq) + "\n" + "Session " + str(self.sessionId)
+                      str(self.rtspSeq) + "\n" + "Session " + str(self.sessionId)
             # Keep track of the sent request.
             # self.requestSent = ...
             self.requestSent = self.PAUSE
@@ -290,7 +291,7 @@ class Client:
             # Write the RTSP request to be sent.
             # request = ...
             request = "FORWARD " + self.fileName + " RTSP/1.0\n" + "CSeq: " + \
-                str(self.rtspSeq) + "\n" + "Session " + str(self.sessionId)
+                      str(self.rtspSeq) + "\n" + "Session " + str(self.sessionId)
             # Keep track of the sent request.
             # self.requestSent = ...
             self.requestSent = self.FORWARD
@@ -308,7 +309,7 @@ class Client:
             # Write the RTSP request to be sent.
             # request = ...
             request = "BACKWARD " + self.fileName + " RTSP/1.0\n" + "CSeq: " + \
-                str(self.rtspSeq) + "\n" + "Session " + str(self.sessionId)
+                      str(self.rtspSeq) + "\n" + "Session " + str(self.sessionId)
             # Keep track of the sent request.
             # self.requestSent = ...
             self.requestSent = self.BACKWARD
@@ -321,7 +322,7 @@ class Client:
             # Write the RTSP request to be sent.
             # request = ...
             request = "DESCRIBE " + self.fileName + " RTSP/1.0\n" + "CSeq: " + \
-                str(self.rtspSeq) + "\n" + "Session " + str(self.sessionId)
+                      str(self.rtspSeq) + "\n" + "Session " + str(self.sessionId)
             # Keep track of the sent request.
             # self.requestSent = ...
             self.requestSent = self.DESCRIBE
@@ -332,7 +333,7 @@ class Client:
             # Write the RTSP request to be sent.
             # request = ...
             request = "SWITCH " + self.fileName + " RTSP/1.0\n" + "CSeq: " + \
-                str(self.rtspSeq) + "\n" + "Session " + str(self.sessionId)
+                      str(self.rtspSeq) + "\n" + "Session " + str(self.sessionId)
             # Keep track of the sent request.
             # self.requestSent = ...
             self.requestSent = self.SWITCH
@@ -346,10 +347,14 @@ class Client:
             # Write the RTSP request to be sent.
             # request = ...
             request = "TEARDOWN " + self.fileName + " RTSP/1.0\n" + "CSeq: " + \
-                str(self.rtspSeq) + "\n" + "Session " + str(self.sessionId)
+                      str(self.rtspSeq) + "\n" + "Session " + str(self.sessionId)
             # Keep track of the sent request.
             # self.requestSent = ...
             self.requestSent = self.TEARDOWN
+        elif requestCode == self.DESCRIBE:
+            self.rtspSeq = self.rtspSeq + 1
+            request = "DESCRIBE " + self.fileName + " RTSP/1.0\n" + "CSeq: " + \
+                      str(self.rtspSeq) + "\n" + "Session " + str(self.sessionId)
         else:
             return
 
@@ -377,6 +382,7 @@ class Client:
     #
     def fileNameCallBack(self, *args):
         self.ChangedFileName = str(self.fileNameVar.get())
+
     ################################################
 
     def parseRtspReply(self, data):
@@ -390,7 +396,7 @@ class Client:
         self.noFrames = int(lines[3].split(' ')[5])
 
         # TODO: Parse file names
-        if len(lines[4].split(' '))-1 > len(self.filenames):
+        if len(lines[4].split(' ')) - 1 > len(self.filenames):
             for i in lines[4].split(' '):
                 if i == 'Media:':
                     continue
@@ -399,9 +405,15 @@ class Client:
         # Sort out duplicates
         self.filenames = sorted(set(self.filenames))
 
+        # TODO: Parse description
+        description = lines[5].split(' ')
+        describe = f"Protocol version number: {description[1]}\n" \
+                   f"Session name: {description[3]}\nProtocol: {description[5]}\n" \
+                   f"File type: {description[7]}\nEncoding: {description[9]}"
+
         # Display total time of the video
         # TODO: Create a slot to display time
-        if (self.requestSent == self.SETUP or self.requestSent == self.SWITCH):
+        if self.requestSent == self.SETUP or self.requestSent == self.SWITCH:
             self.backward = Button(self.master, width=20, padx=3, pady=3)
             self.backward["text"] = "Total time: " + str(self.totalTime) + "s"
             self.backward.grid(row=2, column=2, padx=2, pady=2)
@@ -447,7 +459,7 @@ class Client:
                         pass
                     elif self.requestSent == self.DESCRIBE:
                         # self.state = ...
-                        pass
+                        messagebox.showinfo("Information", describe)
                     elif self.requestSent == self.SWITCH:
                         # self.state = ...
                         self.state = self.READY
