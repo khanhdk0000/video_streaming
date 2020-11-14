@@ -18,7 +18,7 @@ class ServerWorker:
     BACKWARD = 'BACKWARD'
     DESCRIBE = 'DESCRIBE'
     SWITCH = 'SWITCH'
-
+    STOP = 'STOP'
 
     INIT = 0
     READY = 1
@@ -33,6 +33,8 @@ class ServerWorker:
 
     forward = 0
     backward = 0
+
+    filename = ''
 
     def __init__(self, clientInfo):
         self.clientInfo = clientInfo
@@ -51,7 +53,7 @@ class ServerWorker:
 
     ##############################################################
     def getAllMediaFiles(self):
-        #Return a list of name of videos type Mjpeg or mjpeg
+        # Return a list of name of videos type Mjpeg or mjpeg
         fileList = []
         filenames = ""
         for file in os.listdir("./"):
@@ -60,6 +62,7 @@ class ServerWorker:
         for i in range(len(fileList)):
             filenames += (' ' + fileList[i])
         return filenames
+
     #############################################################
 
     def processRtspRequest(self, data):
@@ -70,7 +73,7 @@ class ServerWorker:
         requestType = line1[0]
 
         # Get the media file name
-        filename = line1[1]
+        self.filename = line1[1]
 
         # Get the RTSP sequence number
         seq = request[1].split(' ')
@@ -81,7 +84,7 @@ class ServerWorker:
                 print("processing SETUP\n")
 
                 try:
-                    self.clientInfo['videoStream'] = VideoStream(filename)
+                    self.clientInfo['videoStream'] = VideoStream(self.filename)
                     self.state = self.READY
                     # TODO Get FPS, total time, number of frames of the video to send back to the client
                     #
@@ -93,7 +96,7 @@ class ServerWorker:
                     self.noFrames = self.clientInfo['videoStream'].numFrames
                     #######################################################
 
-                    #Find all media files
+                    # Find all media files
                     print(self.getAllMediaFiles())
 
                 except IOError:
@@ -152,13 +155,13 @@ class ServerWorker:
                 print("processing BACKWARD\n")
                 self.state = self.PLAYING
                 self.backward = 1
-                self.replyRtsp(self.OK_200, seq[1]) 
-        ########################################
+                self.replyRtsp(self.OK_200, seq[1])
+                ########################################
 
         # Process DESCRIBE request
         elif requestType == self.DESCRIBE:
             print("processing DESCRIBE\n")
-            pass
+            self.replyRtsp(self.OK_200, seq[1])
         ########################################
 
         # Process SWITCH request
@@ -166,7 +169,7 @@ class ServerWorker:
             print("processing SWITCH\n")
             # If the state is READY
             if self.state == self.READY:
-                self.clientInfo['videoStream'] = VideoStream(filename)
+                self.clientInfo['videoStream'] = VideoStream(self.filename)
                 # TODO 
                 # Get FPS, total time, number of frames of the video to send back to the client
                 #
@@ -177,8 +180,8 @@ class ServerWorker:
                 self.fps = self.clientInfo['videoStream'].fps
                 self.noFrames = self.clientInfo['videoStream'].numFrames
                 #######################################################
-            # If the state is PLAYING switch to READY first
-            # Required the user to pause the video to switch
+                # If the state is PLAYING switch to READY first
+                # Required the user to pause the video to switch
                 self.replyRtsp(self.OK_200, seq[1])
         ########################################
 
@@ -193,6 +196,15 @@ class ServerWorker:
             # Close the RTP socket
             self.clientInfo['rtpSocket'].close()
 
+        # process stop request
+        elif requestType == self.STOP:
+            print("processing STOP\n")
+            if self.state == self.PLAYING or self.state == self.READY:
+                self.clientInfo['event'].set()
+                self.clientInfo['videoStream'].resetFrame()
+                self.state = self.READY
+                self.replyRtsp(self.OK_200, seq[1])
+
     def sendRtp(self):
         """Send RTP packets over UDP."""
         while True:
@@ -204,7 +216,7 @@ class ServerWorker:
             # Modify the nextFrame function need to recieve a signal whether to forward or backward
             #
             #
-            data = self.clientInfo['videoStream'].nextFrame(self.forward,self.backward)
+            data = self.clientInfo['videoStream'].nextFrame(self.forward, self.backward)
             ######################################################################################
             if data:
                 frameNumber = self.clientInfo['videoStream'].frameNbr()
@@ -219,8 +231,8 @@ class ServerWorker:
             #
             #
             #
-            if ( self.backward == 1): self.backward = 0
-            if ( self.forward == 1): self.forward = 0
+            if (self.backward == 1): self.backward = 0
+            if (self.forward == 1): self.forward = 0
             #############################################
 
     def makeRtp(self, payload, frameNbr):
@@ -242,12 +254,14 @@ class ServerWorker:
         return rtpPacket.getPacket()
 
     def replyRtsp(self, code, seq):
+        describe = f"v=0\ns={self.clientInfo['session']}\na=Real time streaming protocol (RTSP)\na=Motion JPEG"
         """Send RTSP reply to the client."""
         if code == self.OK_200:
             # Send RTSP request ##################################################################
             reply = 'RTSP/1.0 200 OK\nCSeq: ' + seq + '\nSession: ' + str(self.clientInfo['session']) + '\nTotal: ' + \
-            str(self.totalTime) + ' FPS: ' + str(self.fps) + ' Frames: ' + str(self.noFrames) + '\n' + \
-            'Media:' + self.getAllMediaFiles() 
+                    str(self.totalTime) + ' FPS: ' + str(self.fps) + ' Frames: ' + str(self.noFrames) + '\n' + \
+                    'Media:' + self.getAllMediaFiles() + \
+                    f"\nv: 0 s: {self.clientInfo['session']} a: RTSP a: Motion-JPEG a: utf-8 i: {self.filename}"
             #######################################################################################
             connSocket = self.clientInfo['rtspSocket'][0]
             connSocket.send(reply.encode())
@@ -256,5 +270,3 @@ class ServerWorker:
             print("404 NOT FOUND")
         elif code == self.CON_ERR_500:
             print("500 CONNECTION ERROR")
-
-    
