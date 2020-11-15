@@ -97,7 +97,6 @@ class ServerWorker:
                     #######################################################
 
                     # Find all media files
-                    print(self.getAllMediaFiles())
 
                 except IOError:
                     self.replyRtsp(self.FILE_NOT_FOUND_404, seq[1])
@@ -254,14 +253,14 @@ class ServerWorker:
         return rtpPacket.getPacket()
 
     def replyRtsp(self, code, seq):
-        describe = f"v=0\ns={self.clientInfo['session']}\na=Real time streaming protocol (RTSP)\na=Motion JPEG"
         """Send RTSP reply to the client."""
         if code == self.OK_200:
             # Send RTSP request ##################################################################
             reply = 'RTSP/1.0 200 OK\nCSeq: ' + seq + '\nSession: ' + str(self.clientInfo['session']) + '\nTotal: ' + \
                     str(self.totalTime) + ' FPS: ' + str(self.fps) + ' Frames: ' + str(self.noFrames) + '\n' + \
                     'Media:' + self.getAllMediaFiles() + \
-                    f"\nv: 0 s: {self.clientInfo['session']} a: RTSP a: Motion-JPEG a: utf-8 i: {self.filename}"
+                    f"\nv: RTSP/1.0 s: {self.clientInfo['session']} a: Real-time-streaming-protocol a: " \
+                    f"Motion-JPEG a: utf-8 i: {self.filename}"
             #######################################################################################
             connSocket = self.clientInfo['rtspSocket'][0]
             connSocket.send(reply.encode())

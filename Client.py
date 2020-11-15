@@ -70,21 +70,6 @@ class Client:
         # self.start["command"] = self.playMovie
         # self.start.grid(row=1, column=1, padx=2, pady=2)
 
-        # Create Play button
-        # but = Button(
-        #     root,
-        #     bd=0,
-        #     relief="groove",
-        #     compound=tk.CENTER,
-        #     bg="white",
-        #     fg="yellow",
-        #     activeforeground="pink",
-        #     activebackground="white",
-        #     font="arial 30",
-        #     text="Click me",
-        #     pady=10,
-        #     # width=300
-        # )
 
         def on_enter_play(e):
             self.start['background'] = '#ffcbf2'
@@ -290,7 +275,7 @@ class Client:
                         if int(self.frameNbr) % int(self.fps) == 0 or self.frameNbr == self.noFrames:
                             self.updateCountDownTimer()
             except:
-                # Stop listening upon requesting PAUSE or TEARDOWN
+                # Stop listening upon requesting PAUSE or TEARDOWN or STOP
                 if self.playEvent.isSet():
                     break
 
@@ -572,7 +557,7 @@ class Client:
                     elif self.requestSent == self.STOP:
                         self.frameNbr = 0
                         self.state = self.READY
-
+                        self.playEvent.set()
                         # Reset the remaining time back to the total time after pressing STOP.
                         self.remainingTime.set(str(self.totalTime))
                         self.master.update()
