@@ -168,7 +168,8 @@ class ServerWorker:
         elif requestType == self.SWITCH:
             print("processing SWITCH\n")
             # If the state is READY
-            if self.state == self.READY:
+            if self.state == self.READY or self.state == self.PLAYING:
+                print("state", self.state)
                 self.clientInfo['videoStream'] = VideoStream(self.filename)
                 # TODO 
                 # Get FPS, total time, number of frames of the video to send back to the client
@@ -254,7 +255,6 @@ class ServerWorker:
         return rtpPacket.getPacket()
 
     def replyRtsp(self, code, seq):
-        describe = f"v=0\ns={self.clientInfo['session']}\na=Real time streaming protocol (RTSP)\na=Motion JPEG"
         """Send RTSP reply to the client."""
         if code == self.OK_200:
             # Send RTSP request ##################################################################

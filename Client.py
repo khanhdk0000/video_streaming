@@ -70,22 +70,6 @@ class Client:
         # self.start["command"] = self.playMovie
         # self.start.grid(row=1, column=1, padx=2, pady=2)
 
-        # Create Play button
-        # but = Button(
-        #     root,
-        #     bd=0,
-        #     relief="groove",
-        #     compound=tk.CENTER,
-        #     bg="white",
-        #     fg="yellow",
-        #     activeforeground="pink",
-        #     activebackground="white",
-        #     font="arial 30",
-        #     text="Click me",
-        #     pady=10,
-        #     # width=300
-        # )
-
         def on_enter_play(e):
             self.start['background'] = '#ffcbf2'
         def on_leave_play(e):
@@ -215,7 +199,9 @@ class Client:
 
     def pauseMovie(self):
         """Pause button handler."""
+        print("pause", self.state)
         if self.state == self.PLAYING:
+
             self.sendRtspRequest(self.PAUSE)
 
     def playMovie(self):
@@ -557,7 +543,7 @@ class Client:
                         messagebox.showinfo("Information", describe)
                     elif self.requestSent == self.SWITCH:
                         # self.state = ...
-                        self.state = self.READY
+                        self.state = self.PLAYING if self.state == self.PLAYING else self.READY
 
                         # Get total time of video to remaining time after SWITCHING video
                         self.remainingTime.set(str(self.totalTime))
