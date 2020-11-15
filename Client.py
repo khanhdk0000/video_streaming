@@ -70,6 +70,7 @@ class Client:
         # self.start["command"] = self.playMovie
         # self.start.grid(row=1, column=1, padx=2, pady=2)
 
+
         def on_enter_play(e):
             self.start['background'] = '#ffcbf2'
         def on_leave_play(e):
@@ -199,9 +200,7 @@ class Client:
 
     def pauseMovie(self):
         """Pause button handler."""
-        print("pause", self.state)
         if self.state == self.PLAYING:
-
             self.sendRtspRequest(self.PAUSE)
 
     def playMovie(self):
@@ -276,7 +275,7 @@ class Client:
                         if int(self.frameNbr) % int(self.fps) == 0 or self.frameNbr == self.noFrames:
                             self.updateCountDownTimer()
             except:
-                # Stop listening upon requesting PAUSE or TEARDOWN
+                # Stop listening upon requesting PAUSE or TEARDOWN or STOP
                 if self.playEvent.isSet():
                     break
 
@@ -543,7 +542,7 @@ class Client:
                         messagebox.showinfo("Information", describe)
                     elif self.requestSent == self.SWITCH:
                         # self.state = ...
-                        self.state = self.PLAYING if self.state == self.PLAYING else self.READY
+                        self.state = self.READY
 
                         # Get total time of video to remaining time after SWITCHING video
                         self.remainingTime.set(str(self.totalTime))
@@ -558,7 +557,7 @@ class Client:
                     elif self.requestSent == self.STOP:
                         self.frameNbr = 0
                         self.state = self.READY
-
+                        self.playEvent.set()
                         # Reset the remaining time back to the total time after pressing STOP.
                         self.remainingTime.set(str(self.totalTime))
                         self.master.update()

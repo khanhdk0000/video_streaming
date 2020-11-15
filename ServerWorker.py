@@ -168,8 +168,7 @@ class ServerWorker:
         elif requestType == self.SWITCH:
             print("processing SWITCH\n")
             # If the state is READY
-            if self.state == self.READY or self.state == self.PLAYING:
-                print("state", self.state)
+            if self.state == self.READY:
                 self.clientInfo['videoStream'] = VideoStream(self.filename)
                 # TODO 
                 # Get FPS, total time, number of frames of the video to send back to the client
@@ -261,7 +260,8 @@ class ServerWorker:
             reply = 'RTSP/1.0 200 OK\nCSeq: ' + seq + '\nSession: ' + str(self.clientInfo['session']) + '\nTotal: ' + \
                     str(self.totalTime) + ' FPS: ' + str(self.fps) + ' Frames: ' + str(self.noFrames) + '\n' + \
                     'Media:' + self.getAllMediaFiles() + \
-                    f"\nv: 0 s: {self.clientInfo['session']} a: RTSP a: Motion-JPEG a: utf-8 i: {self.filename}"
+                    f"\nv: RTSP/1.0 s: {self.clientInfo['session']} a: Real-time-streaming-protocol a: " \
+                    f"Motion-JPEG a: utf-8 i: {self.filename}"
             #######################################################################################
             connSocket = self.clientInfo['rtspSocket'][0]
             connSocket.send(reply.encode())
