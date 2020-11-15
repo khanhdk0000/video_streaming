@@ -97,7 +97,6 @@ class ServerWorker:
                     #######################################################
 
                     # Find all media files
-                    print(self.getAllMediaFiles())
 
                 except IOError:
                     self.replyRtsp(self.FILE_NOT_FOUND_404, seq[1])
